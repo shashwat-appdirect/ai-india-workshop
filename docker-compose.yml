@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ai-india-workshop
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - FRONTEND_URL=http://localhost:8080
+      - STATIC_DIR=/app/static
+      # Optional: For local development with service account file
+      - FIREBASE_SERVICE_ACCOUNT_PATH=${FIREBASE_SERVICE_ACCOUNT_PATH:-}
+      - FIRESTORE_SUBCOLLECTION_ID=${FIRESTORE_SUBCOLLECTION_ID:-ai-india-workshop-2024}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-change-this-password}
+      - SESSION_SECRET=${SESSION_SECRET:-change-this-secret-min-32-chars}
+      # For Cloud Run, FIREBASE_SERVICE_ACCOUNT_PATH should be empty to use ADC
+    volumes:
+      # Only mount service account if file exists (for local development)
+      # Comment out this line if deploying to Cloud Run (uses ADC instead)
+      # - ./firebase-service-account.json:/app/firebase-service-account.json:ro
+    restart: unless-stopped
+    networks:
+      - ai-workshop-network
+
+networks:
+  ai-workshop-network:
+    driver: bridge
+
