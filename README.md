@@ -175,69 +175,60 @@ docker run -p 8080:8080 \
 
 The application is configured to deploy to Google Cloud Run without requiring a Firebase service account file. It uses Application Default Credentials (ADC) provided by Cloud Run.
 
-### Prerequisites
+### Quick Deployment
 
-1. Google Cloud Project with billing enabled
-2. Firestore Database enabled
-3. Cloud Run API enabled
-4. Service account with Firestore permissions
+**Option 1: Automated Script (Recommended)**
+```bash
+./deploy-cloud-run.sh
+# Or using Makefile:
+make deploy-cloud-run
+```
 
-### Deployment Steps
+**Option 2: Manual Deployment**
+See [DEPLOYMENT_QUICK_START.md](./DEPLOYMENT_QUICK_START.md) for step-by-step instructions.
 
-1. **Build and push the Docker image to Google Container Registry:**
+### Detailed Documentation
+
+For comprehensive deployment guide, environment variable setup, and troubleshooting, see:
+- **[CLOUD_RUN_DEPLOYMENT.md](./CLOUD_RUN_DEPLOYMENT.md)** - Complete deployment guide
+- **[DEPLOYMENT_QUICK_START.md](./DEPLOYMENT_QUICK_START.md)** - Quick reference
+- **[ENV_VARIABLES.md](./ENV_VARIABLES.md)** - Environment variables reference
+
+### Required Environment Variables for Cloud Run
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `FIRESTORE_SUBCOLLECTION_ID` | ✅ Yes | Firestore subcollection identifier |
+| `ADMIN_PASSWORD` | ✅ Yes | Admin panel password |
+| `SESSION_SECRET` | ✅ Yes | Session encryption key (min 32 chars) |
+| `FRONTEND_URL` | ⚠️ Recommended | Your Cloud Run service URL (for CORS) |
+
+**Note**: `GCP_PROJECT_ID` is automatically set by Cloud Run as `GOOGLE_CLOUD_PROJECT`, so you don't need to set it manually.
+
+### Quick Deploy Command
 
 ```bash
-# Set your project ID
+# Set your variables
 export PROJECT_ID=your-project-id
 export SERVICE_NAME=ai-india-workshop
 
-# Build and tag the image
-docker build -t gcr.io/$PROJECT_ID/$SERVICE_NAME:latest .
-
-# Push to GCR
-docker push gcr.io/$PROJECT_ID/$SERVICE_NAME:latest
-```
-
-2. **Deploy to Cloud Run:**
-
-```bash
+# Deploy
 gcloud run deploy $SERVICE_NAME \
   --image gcr.io/$PROJECT_ID/$SERVICE_NAME:latest \
   --platform managed \
   --region us-central1 \
   --allow-unauthenticated \
   --set-env-vars="FIRESTORE_SUBCOLLECTION_ID=ai-india-workshop-2024" \
-  --set-env-vars="ADMIN_PASSWORD=your-secure-password" \
-  --set-env-vars="SESSION_SECRET=your-secret-min-32-characters-long" \
-  --set-env-vars="PORT=8080" \
-  --set-env-vars="STATIC_DIR=/app/static"
-```
-
-3. **Set up Service Account (for Firestore access):**
-
-```bash
-# Create a service account (if not exists)
-gcloud iam service-accounts create ai-workshop-sa \
-  --display-name="AI Workshop Service Account"
-
-# Grant Firestore permissions
-gcloud projects add-iam-policy-binding $PROJECT_ID \
-  --member="serviceAccount:ai-workshop-sa@$PROJECT_ID.iam.gserviceaccount.com" \
-  --role="roles/datastore.user"
-
-# Attach service account to Cloud Run service
-gcloud run services update $SERVICE_NAME \
-  --service-account=ai-workshop-sa@$PROJECT_ID.iam.gserviceaccount.com \
-  --region us-central1
+  --set-env-vars="ADMIN_PASSWORD=your-password" \
+  --set-env-vars="SESSION_SECRET=your-secret-min-32-chars"
 ```
 
 ### Important Notes for Cloud Run
 
-- **No Firebase Service Account File Required**: The application automatically uses Application Default Credentials when `FIREBASE_SERVICE_ACCOUNT_PATH` is not set
-- **Environment Variables**: Set all required environment variables via Cloud Run configuration
-- **Port**: Cloud Run sets the `PORT` environment variable automatically, but you can override it
-- **Static Files**: The `STATIC_DIR` environment variable is set in the Dockerfile to `/app/static`
-- **CORS**: Update `FRONTEND_URL` environment variable to your Cloud Run service URL
+- **No Firebase Service Account File Required**: Uses Application Default Credentials (ADC)
+- **Service Account**: Must be attached with `roles/datastore.user` role
+- **Environment Variables**: Set via `--set-env-vars` or Cloud Run console
+- **CORS**: Set `FRONTEND_URL` to your Cloud Run service URL after deployment
 
 ## API Endpoints
 

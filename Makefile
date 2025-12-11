@@ -1,4 +1,4 @@
-.PHONY: help build build-backend build-frontend run run-backend run-frontend test test-backend test-frontend docker-build docker-run docker-run-local docker-stop docker-up docker-down docker-logs clean install install-backend install-frontend
+.PHONY: help build build-backend build-frontend run run-backend run-frontend test test-backend test-frontend docker-build docker-run docker-run-local docker-stop docker-up docker-down docker-logs deploy-cloud-run clean install install-backend install-frontend
 
 # Default target
 help:
@@ -14,6 +14,7 @@ help:
 	@echo "  make docker-up       - Start services with Docker Compose"
 	@echo "  make docker-down     - Stop Docker Compose services"
 	@echo "  make docker-logs     - View Docker Compose logs"
+	@echo "  make deploy-cloud-run - Deploy to Google Cloud Run (interactive)"
 	@echo "  make clean           - Clean build artifacts"
 
 # Install dependencies
@@ -111,17 +112,18 @@ docker-run: docker-build
 
 docker-run-local: docker-build
 	@echo "Running Docker container with service account file (local dev)..."
-	@if [ ! -f firebase-service-account.json ]; then \
-		echo "Error: firebase-service-account.json not found!"; \
-		echo "Please place your Firebase service account JSON file in the project root."; \
-		exit 1; \
-	fi
 	@docker stop ai-india-workshop 2>/dev/null || true
 	@docker rm ai-india-workshop 2>/dev/null || true
 	@if [ -f .env ]; then \
 		export FIRESTORE_SUBCOLLECTION_ID=$$(grep -E '^FIRESTORE_SUBCOLLECTION_ID=' .env | cut -d '=' -f2- | tr -d '"'"'"'"' || echo 'ai-india-workshop-2024'); \
 		export ADMIN_PASSWORD=$$(grep -E '^ADMIN_PASSWORD=' .env | cut -d '=' -f2- | tr -d '"'"'"'"' || echo 'change-this-password'); \
 		export SESSION_SECRET=$$(grep -E '^SESSION_SECRET=' .env | cut -d '=' -f2- | tr -d '"'"'"'"' || echo 'change-this-secret-min-32-chars'); \
+		export SERVICE_ACCOUNT_PATH=$$(grep -E '^FIREBASE_SERVICE_ACCOUNT_PATH=' .env | cut -d '=' -f2- | tr -d '"'"'"'"' || echo './firebase-service-account.json'); \
+		if [ ! -f "$$SERVICE_ACCOUNT_PATH" ]; then \
+			echo "Error: Service account file not found at $$SERVICE_ACCOUNT_PATH"; \
+			echo "Please check FIREBASE_SERVICE_ACCOUNT_PATH in your .env file."; \
+			exit 1; \
+		fi; \
 		docker run -d --name ai-india-workshop \
 			-p 8080:8080 \
 			-e FIREBASE_SERVICE_ACCOUNT_PATH=/app/firebase-service-account.json \
@@ -130,9 +132,14 @@ docker-run-local: docker-build
 			-e SESSION_SECRET="$$SESSION_SECRET" \
 			-e PORT=8080 \
 			-e STATIC_DIR=/app/static \
-			-v $$(pwd)/firebase-service-account.json:/app/firebase-service-account.json:ro \
+			-v "$$SERVICE_ACCOUNT_PATH:/app/firebase-service-account.json:ro" \
 			ai-india-workshop:latest; \
 	else \
+		if [ ! -f firebase-service-account.json ]; then \
+			echo "Error: firebase-service-account.json not found!"; \
+			echo "Please place your Firebase service account JSON file in the project root or create a .env file."; \
+			exit 1; \
+		fi; \
 		docker run -d --name ai-india-workshop \
 			-p 8080:8080 \
 			-e FIREBASE_SERVICE_ACCOUNT_PATH=/app/firebase-service-account.json \
@@ -169,6 +176,15 @@ docker-clean:
 	@echo "Cleaning Docker resources..."
 	docker-compose down -v
 	docker rmi ai-india-workshop:latest 2>/dev/null || true
+
+deploy-cloud-run:
+	@echo "Deploying to Google Cloud Run..."
+	@if [ ! -f deploy-cloud-run.sh ]; then \
+		echo "Error: deploy-cloud-run.sh not found!"; \
+		exit 1; \
+	fi
+	@chmod +x deploy-cloud-run.sh
+	@./deploy-cloud-run.sh
 
 # Clean targets
 clean:

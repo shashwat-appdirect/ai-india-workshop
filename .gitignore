@@ -2,14 +2,32 @@
 .env
 .env.local
 .env.*.local
+.env.*
+!.env.example
+!**/.env.example
 
-# Firebase service account
+# Firebase service account and credentials
 firebase-service-account.json
+*-service-account.json
+*service-account*.json
+service-account*.json
+credentials.json
+*-credentials.json
+gcp-*.json
+google-*.json
+prodengkpi-*.json
+# Allow package.json and config files
 *.json
 !package.json
 !package-lock.json
 !tsconfig.json
 !tsconfig.*.json
+!eslint.config.js
+!tailwind.config.js
+!postcss.config.js
+!vite.config.ts
+!go.mod
+!go.sum
 
 # Dependencies
 node_modules/
@@ -48,4 +66,5 @@ go.work
 
 # Docker
 .dockerignore
+
 

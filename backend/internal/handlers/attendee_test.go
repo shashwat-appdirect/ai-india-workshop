@@ -299,3 +299,4 @@ func TestAttendeeHandler_Delete(t *testing.T) {
 	}
 }
 
+

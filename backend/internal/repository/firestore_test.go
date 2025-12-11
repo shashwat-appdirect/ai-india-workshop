@@ -202,3 +202,4 @@ func TestRepository_ErrorHandling(t *testing.T) {
 	t.Skip("Requires Firestore client mocks for full error path testing")
 }
 
+

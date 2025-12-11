@@ -106,3 +106,4 @@ func (m *MockRepository) GetDesignationBreakdown(ctx context.Context) ([]models.
 	return args.Get(0).([]models.DesignationCount), args.Error(1)
 }
 
+
