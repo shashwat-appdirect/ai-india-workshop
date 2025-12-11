@@ -14,6 +14,10 @@ RUN npm ci
 # Copy frontend source code
 COPY frontend/ .
 
+# Set API base URL to relative path for production (frontend and backend on same domain)
+ARG VITE_API_BASE_URL=/api
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+
 # Build the frontend
 RUN npm run build
 
